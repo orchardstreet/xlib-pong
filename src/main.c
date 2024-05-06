@@ -40,7 +40,6 @@ struct paddle_struct
 	unsigned char user;
 	unsigned int velocity;
 	unsigned char position_changed;
-	int old_x_pos;
 	int old_y_pos;
 };
 

@@ -5,8 +5,10 @@
 #include <X11/keysym.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <math.h>
 #define MAX_WINDOWS 30
 #define FRAME_DURATION 14000 /* in nanoseconds */
 
@@ -17,9 +19,11 @@ XEvent event_x11;
 enum window_background_colors_enum {WHITE_WINDOW_BACKGROUND, BLACK_WINDOW_BACKGROUND};
 enum paddles_enum {LEFT_PADDLE, RIGHT_PADDLE};
 enum direction_enum {NO_DIRECTION = 0, DIRECTION_UP = -1, DIRECTION_DOWN = 1};
+enum direction_enum2 {DIRECTION_LEFT= -1, DIRECTION_RIGHT = 1};
 enum user_enum {HUMAN, COMPUTER};
 enum exit_codes_enum {EXIT_PROGRAM, SUCCESS, FAILURE};
 int usleep(useconds_t usec);
+float random_reaction = 30;
 
 /* Struct that holds all windows in the program */
 struct window_struct 
@@ -29,17 +33,31 @@ struct window_struct
 	int window_y_pos;
 };
 
+struct ball_struct
+{
+	float x_pos;
+	float y_pos;
+	signed char width;
+	float velocity;
+	float slope;
+	struct window_struct *window;
+	signed char passed;
+};
+
 struct paddle_struct
 /* If switching from computer to user or visa versa, it is necessary to 0 out the direction and pressed variables 
  * unless adding separate variables here for each */
 {
 	struct window_struct *window;
 	signed char direction;
-	unsigned char up_button_pressed;
-	unsigned char down_button_pressed;
-	unsigned char user;
-	unsigned int velocity;
-	unsigned char position_changed;
+	signed char up_button_pressed;
+	signed char down_button_pressed;
+	signed char user;
+	signed char velocity;
+	signed char default_velocity;
+	signed char position_changed;
+	signed char height;
+	unsigned long score;
 	int old_y_pos;
 };
 
@@ -207,23 +225,51 @@ process_event_queue(int num_events, struct paddle_struct *paddles, Atom wmDelete
 	return SUCCESS;
 }
 
+void move_ball(struct ball_struct *ball)
+{
+	if(ball->slope == 0) {
+		ball->x_pos += ball->velocity;
+	} else {
+		ball->x_pos += ball->velocity / sqrt(1 + pow(ball->slope,2));
+		ball->y_pos += (ball->velocity * ball->slope) / sqrt(1 + pow(ball->slope,2));
+	}
+}
+
 void
-update_moving_window_coordinates(struct window_struct *windows, struct paddle_struct *paddles)
+update_moving_window_coordinates(struct window_struct *windows, struct ball_struct *ball, struct paddle_struct *paddles)
 {
 	/* by default, assuming none of both down and up arrows are held down */
 	//printf("Moving windows...\n");
+	printf("random reaction: %f\n",random_reaction);
 
 	/* TODO, for larger programs, Create array of objects with non-0 velocity and iterate them here and in move */
+	paddles[LEFT_PADDLE].old_y_pos = paddles[LEFT_PADDLE].window->window_y_pos;
+	printf("%f\n",ball->x_pos);
+	if(ball->velocity > 0 || ball->x_pos > 310 + random_reaction) {
+		paddles[LEFT_PADDLE].velocity = 0;
+		paddles[LEFT_PADDLE].position_changed = 0;
+	} else if(ball->y_pos > paddles[LEFT_PADDLE].window->window_y_pos + paddles[LEFT_PADDLE].height - 20) {
+		paddles[LEFT_PADDLE].velocity = paddles[LEFT_PADDLE].default_velocity;
+		paddles[LEFT_PADDLE].window->window_y_pos += paddles[LEFT_PADDLE].velocity;
+		paddles[LEFT_PADDLE].position_changed = 1;
+	} else if(ball->y_pos < paddles[LEFT_PADDLE].window->window_y_pos + 20) {
+		paddles[LEFT_PADDLE].velocity = -paddles[LEFT_PADDLE].default_velocity;
+		paddles[LEFT_PADDLE].window->window_y_pos += paddles[LEFT_PADDLE].velocity;
+		paddles[LEFT_PADDLE].position_changed = 1;
+	}
+
+	paddles[RIGHT_PADDLE].old_y_pos = paddles[RIGHT_PADDLE].window->window_y_pos;
 	if(paddles[RIGHT_PADDLE].direction == NO_DIRECTION) {
 		paddles[RIGHT_PADDLE].velocity = 0;
 		paddles[RIGHT_PADDLE].position_changed = 0;
 	} else {
-		paddles[RIGHT_PADDLE].velocity = 4;
-		paddles[RIGHT_PADDLE].old_y_pos = paddles[RIGHT_PADDLE].window->window_y_pos;
-		paddles[RIGHT_PADDLE].window->window_y_pos += paddles[RIGHT_PADDLE].direction * paddles[RIGHT_PADDLE].velocity; 
+		paddles[RIGHT_PADDLE].velocity = paddles[RIGHT_PADDLE].default_velocity;
+		paddles[RIGHT_PADDLE].window->window_y_pos += paddles[RIGHT_PADDLE].direction * paddles[RIGHT_PADDLE].velocity;
 		paddles[RIGHT_PADDLE].position_changed = 1;
 		/* TODO move to after collision detection in new function */
 	}
+
+	move_ball(ball);
 	/* old, working logic trying to improve, new logic decreases memory and instructions on repeat presses
 	 * by around 70-80%
 	combined = up_arrow_button + down_arrow_button;
@@ -241,38 +287,152 @@ update_moving_window_coordinates(struct window_struct *windows, struct paddle_st
 }
 
 void
-window_collision_detection(struct paddle_struct *paddles)
+window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ball)
 	/* Detect collision on windows with a velocity */
 {
 	/* TODO NO_DIRECTION should set velocity at 0 */
 	//printf("Collision detection...\n");
+	float paddle_traveled;
 	
 	/* If we had a velocity, we moved and so detect collision and re-evaluate if our position changed */
+	/* left paddle wall collision */
+	if(paddles[LEFT_PADDLE].velocity) {
+		if(paddles[LEFT_PADDLE].window->window_y_pos < 0) {
+			paddles[LEFT_PADDLE].window->window_y_pos = 1; 
+			paddles[LEFT_PADDLE].velocity = 0;
+			if(paddles[LEFT_PADDLE].window->window_y_pos == paddles[LEFT_PADDLE].old_y_pos)
+				paddles[LEFT_PADDLE].position_changed = 0;
+		} else if (paddles[LEFT_PADDLE].window->window_y_pos > 389) { /* TODO window-height - paddle-length */
+			paddles[LEFT_PADDLE].window->window_y_pos = 389; /* TODO window-height - paddle-length */
+			paddles[LEFT_PADDLE].velocity = 0;
+			if(paddles[LEFT_PADDLE].window->window_y_pos == paddles[LEFT_PADDLE].old_y_pos)
+				paddles[LEFT_PADDLE].position_changed = 0;
+		}
+	}
+	/* right paddle wall collision */
 	if(paddles[RIGHT_PADDLE].velocity) {
 		if(paddles[RIGHT_PADDLE].window->window_y_pos < 0) {
 			paddles[RIGHT_PADDLE].window->window_y_pos = 1; 
 			paddles[RIGHT_PADDLE].velocity = 0;
 			if(paddles[RIGHT_PADDLE].window->window_y_pos == paddles[RIGHT_PADDLE].old_y_pos)
 				paddles[RIGHT_PADDLE].position_changed = 0;
-		} else if (paddles[RIGHT_PADDLE].window->window_y_pos > 390) { /* TODO window-height - paddle-length */
-			paddles[RIGHT_PADDLE].window->window_y_pos = 390; /* TODO window-height - paddle-length */
+		} else if (paddles[RIGHT_PADDLE].window->window_y_pos > 389) { /* TODO window-height - paddle-length */
+			paddles[RIGHT_PADDLE].window->window_y_pos = 389; /* TODO window-height - paddle-length */
 			paddles[RIGHT_PADDLE].velocity = 0;
 			if(paddles[RIGHT_PADDLE].window->window_y_pos == paddles[RIGHT_PADDLE].old_y_pos)
 				paddles[RIGHT_PADDLE].position_changed = 0;
 		}
 	}
 
+
+
+	/* Ball is past left paddle */
+	paddle_traveled = paddles[LEFT_PADDLE].window->window_y_pos - paddles[LEFT_PADDLE].old_y_pos;
+	if(ball->passed == False && ball->x_pos <= 20 + 15 - 1) { 
+		if (ball->y_pos + ball->width - 1 < paddles[LEFT_PADDLE].window->window_y_pos || ball->y_pos > paddles[LEFT_PADDLE].window->window_y_pos + paddles[LEFT_PADDLE].height - 1) { /* Ball passed right paddle, left player wins */
+			ball->passed = True;
+			paddles[LEFT_PADDLE].score += 1;
+			printf("Right player won :) \n");
+		} else { /* Ball collided with right paddle, continue */
+			printf("Ball collision with left paddle!\n");
+			if(paddle_traveled > 0) { /* If paddle moved down */
+				ball->slope -= .4;
+				if(ball->slope <= 0)
+					ball->slope *= -1;
+				printf("moved down collision\n");
+			} else if(paddle_traveled < 0) { /* If paddle moved up */
+				ball->slope += .4;
+				if(ball->slope > 0)
+					ball->slope *= -1;
+				printf("moved up collision\n");
+			} else if (ball->slope) {
+				ball->slope *= -1;
+			}
+			
+			/* Limit how much ball bounces off walls */
+			if(ball->slope > 1.6) {
+				printf("Readjusting\n");
+				ball->slope -= .4;
+			}
+			if(ball->slope < -1.6) {
+				printf("Readjusting\n");
+				ball->slope += .4;
+			}
+			ball->velocity = ball->velocity * -1;
+			move_ball(ball);
+		}
+	}
+
+	/* Ball is past right paddle */
+	paddle_traveled = paddles[RIGHT_PADDLE].window->window_y_pos - paddles[RIGHT_PADDLE].old_y_pos;
+	if(ball->passed == False && ball->x_pos + ball->width - 1 >= 600) { 
+		if (ball->y_pos + ball->width - 1 < paddles[RIGHT_PADDLE].window->window_y_pos || ball->y_pos > paddles[RIGHT_PADDLE].window->window_y_pos + paddles[RIGHT_PADDLE].height - 1) { /* Ball passed right paddle, left player wins */
+			ball->passed = True;
+			paddles[LEFT_PADDLE].score += 1;
+			printf("Left player won :) \n");
+		} else { /* Ball collided with right paddle, continue */
+			printf("Ball collision with right paddle!\n");
+			random_reaction = rand() % 51;
+			if(paddle_traveled > 0) { /* If paddle moved down */
+				ball->slope += .4;
+				if(ball->slope > 0)
+					ball->slope *= -1;
+				printf("moved down collision\n");
+			} else if(paddle_traveled < 0) { /* If paddle moved up */
+				ball->slope -= .4;
+				if(ball->slope <= 0)
+					ball->slope *= -1;
+				printf("moved up collision\n");
+			} else if (ball->slope) {
+				ball->slope *= -1;
+			}
+			
+			/* Limit how much ball bounces off walls */
+			if(ball->slope > 1.6) {
+				printf("Readjusting\n");
+				ball->slope -= .4;
+			}
+			if(ball->slope < -1.6) {
+				printf("Readjusting\n");
+				ball->slope += .4;
+			}
+			ball->velocity = ball->velocity * -1;
+			move_ball(ball);
+		}
+	}
+
+	/* Ball hits walls */
+	if(ball->y_pos < 0) {
+		ball->y_pos = 1;
+		ball->slope *= -1;
+	} else if (ball->y_pos + ball->width - 1 > 480) {
+		ball->y_pos = 480 - ball->width;
+		ball->slope *= -1;
+	}
+
+
+	printf("slope: %f\n",ball->slope);
+
+
 	/* TODO add those with position changed to array for later move by z axis */
 }
 
 void
-move_windows(struct paddle_struct *paddles) {
+move_windows(struct paddle_struct *paddles, struct ball_struct *ball) {
+
 	/* Move windows that changed position */
+
+	if(paddles[LEFT_PADDLE].position_changed) {
+		XMoveWindow(display, paddles[LEFT_PADDLE].window->window_number, paddles[LEFT_PADDLE].window->window_x_pos, \
+			    paddles[LEFT_PADDLE].window->window_y_pos);
+	}
 
 	if(paddles[RIGHT_PADDLE].position_changed) {
 		XMoveWindow(display, paddles[RIGHT_PADDLE].window->window_number, paddles[RIGHT_PADDLE].window->window_x_pos, \
 			    paddles[RIGHT_PADDLE].window->window_y_pos);
 	}
+
+	XMoveWindow(display, ball->window->window_number, ball->x_pos, ball->y_pos); 
 
 }
 
@@ -299,18 +459,27 @@ main(void)
 
 	/* Initialize variables */
 	struct window_struct windows[MAX_WINDOWS];
-	struct paddle_struct paddles[2];
 	int num_windows = 0;
+	struct paddle_struct paddles[2];
+	struct ball_struct ball;
 	unsigned long frame;
 	int num_events;
 	memset(paddles, 0, sizeof(struct paddle_struct) * 2); /* 0 out both paddles */
+	memset(&ball,0,sizeof(struct ball_struct));
 	paddles[LEFT_PADDLE].user = COMPUTER;
 	/* some lines below are redundant and here for clarity or future modification */
 	paddles[LEFT_PADDLE].direction = NO_DIRECTION;
 	paddles[RIGHT_PADDLE].user = HUMAN; 
 	paddles[RIGHT_PADDLE].direction = NO_DIRECTION;
-	paddles[RIGHT_PADDLE].velocity = 4;
+	paddles[RIGHT_PADDLE].default_velocity = 4;
+	paddles[RIGHT_PADDLE].velocity = paddles[RIGHT_PADDLE].default_velocity;
+	paddles[LEFT_PADDLE].velocity = 0;
+	paddles[LEFT_PADDLE].default_velocity = 4;
+	ball.velocity = 4;
+	ball.slope = 0;
 
+	/* Init rand */
+	srand(time(NULL));
 
 	/* Open display and get screen number */
 	display = XOpenDisplay(NULL);
@@ -327,14 +496,24 @@ main(void)
 		WHITE_WINDOW_BACKGROUND, 0, 0, 640, 480);
 	/* Create left paddle window and map to display */
 	create_and_map_window(windows, windows[0].window_number, &num_windows, 0,
-		BLACK_WINDOW_BACKGROUND, 20, 20, 15, 90);
+		BLACK_WINDOW_BACKGROUND, 20, 20, 15, 91);
 	/* Assign left paddle window to left paddle struct */
 	paddles[LEFT_PADDLE].window = &windows[num_windows - 1];
+	paddles[LEFT_PADDLE].height = 90;
 	/* Create right paddle window and map to display */
 	create_and_map_window(windows, windows[0].window_number, &num_windows, 0,
-		BLACK_WINDOW_BACKGROUND, 600, 20, 15, 90);
+		BLACK_WINDOW_BACKGROUND, 600, 150, 15, 91);
 	/* Assign right paddle window to right paddle struct */
 	paddles[RIGHT_PADDLE].window = &windows[num_windows - 1];
+	paddles[RIGHT_PADDLE].height = 90;
+	/* Create ball and map to display */
+	create_and_map_window(windows, windows[0].window_number, &num_windows, 0,
+		BLACK_WINDOW_BACKGROUND, 320, 200, 20, 20);
+	/* Assign ball window to ball struct */
+	ball.window = &windows[num_windows - 1];
+	ball.x_pos = windows[num_windows - 1].window_x_pos;
+	ball.y_pos = windows[num_windows - 1].window_y_pos;
+	ball.width = 20;
 
 	/* We want to recieve the delete window message
 	 * during a ClientMessage event while processing the
@@ -363,13 +542,14 @@ main(void)
 			/* Process non-movement key states */
 		}
 		/* Update window coordinates */
-		update_moving_window_coordinates(windows, paddles);
+		update_moving_window_coordinates(windows, &ball, paddles);
 		/* Collision detection */
-		window_collision_detection(paddles);
+		window_collision_detection(paddles, &ball);
 		/* Move everything that was updated */
-		move_windows(paddles);
+		move_windows(paddles,&ball);
 		/* Wait until end of frame to display, in order for display to be at regular intervals */
 		usleep(FRAME_DURATION);
+		/*printf("Frame: %lu\n",frame);*/
 	} 
 
 	/* -------------------------------------------------------------------------------------------------------------------------------------- */

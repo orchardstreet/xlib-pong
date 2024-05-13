@@ -1,6 +1,6 @@
 CC=clang
 CFLAGS=-O2
-LDFLAGS=-lX11
+LDFLAGS=-lX11 -lm
 EXECUTABLE=fuckassface
 OBJECT_FILES=obj/main.o
 

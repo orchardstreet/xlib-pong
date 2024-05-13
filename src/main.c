@@ -245,7 +245,7 @@ update_moving_window_coordinates(struct window_struct *windows, struct ball_stru
 	/* TODO, for larger programs, Create array of objects with non-0 velocity and iterate them here and in move */
 	paddles[LEFT_PADDLE].old_y_pos = paddles[LEFT_PADDLE].window->window_y_pos;
 	printf("%f\n",ball->x_pos);
-	if(ball->velocity > 0 || ball->x_pos > 320 + random_reaction) {
+	if(ball->velocity > 0 || ball->x_pos > 70 + random_reaction) {
 		paddles[LEFT_PADDLE].velocity = 0;
 		paddles[LEFT_PADDLE].position_changed = 0;
 	} else if(ball->y_pos > paddles[LEFT_PADDLE].window->window_y_pos + paddles[LEFT_PADDLE].height - 20) {
@@ -372,7 +372,7 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 			printf("Left player won :) \n");
 		} else { /* Ball collided with right paddle, continue */
 			printf("Ball collision with right paddle!\n");
-			random_reaction = rand() % 51;
+			random_reaction = rand() % 300;
 			if(paddle_traveled > 0) { /* If paddle moved down */
 				ball->slope += .42;
 				if(ball->slope > 0)
@@ -496,7 +496,7 @@ main(void)
 		WHITE_WINDOW_BACKGROUND, 0, 0, 640, 480);
 	/* Create left paddle window and map to display */
 	create_and_map_window(windows, windows[0].window_number, &num_windows, 0,
-		BLACK_WINDOW_BACKGROUND, 20, 20, 15, 91);
+		BLACK_WINDOW_BACKGROUND, 20, 130, 15, 91);
 	/* Assign left paddle window to left paddle struct */
 	paddles[LEFT_PADDLE].window = &windows[num_windows - 1];
 	paddles[LEFT_PADDLE].height = 90;

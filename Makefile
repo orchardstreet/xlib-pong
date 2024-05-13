@@ -1,7 +1,7 @@
 CC=clang
 CFLAGS=-O2
 LDFLAGS=-lX11 -lm
-EXECUTABLE=fuckassface
+EXECUTABLE=xlib-pong
 OBJECT_FILES=obj/main.o
 
 $(EXECUTABLE): $(OBJECT_FILES)

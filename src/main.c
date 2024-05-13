@@ -245,7 +245,7 @@ update_moving_window_coordinates(struct window_struct *windows, struct ball_stru
 	/* TODO, for larger programs, Create array of objects with non-0 velocity and iterate them here and in move */
 	paddles[LEFT_PADDLE].old_y_pos = paddles[LEFT_PADDLE].window->window_y_pos;
 	printf("%f\n",ball->x_pos);
-	if(ball->velocity > 0 || ball->x_pos > 70 + random_reaction) {
+	if(ball->velocity > 0 || ball->x_pos > 90 + random_reaction) {
 		paddles[LEFT_PADDLE].velocity = 0;
 		paddles[LEFT_PADDLE].position_changed = 0;
 	} else if(ball->y_pos > paddles[LEFT_PADDLE].window->window_y_pos + paddles[LEFT_PADDLE].height - 20) {

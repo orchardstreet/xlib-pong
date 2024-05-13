@@ -245,7 +245,7 @@ update_moving_window_coordinates(struct window_struct *windows, struct ball_stru
 	/* TODO, for larger programs, Create array of objects with non-0 velocity and iterate them here and in move */
 	paddles[LEFT_PADDLE].old_y_pos = paddles[LEFT_PADDLE].window->window_y_pos;
 	printf("%f\n",ball->x_pos);
-	if(ball->velocity > 0 || ball->x_pos > 310 + random_reaction) {
+	if(ball->velocity > 0 || ball->x_pos > 320 + random_reaction) {
 		paddles[LEFT_PADDLE].velocity = 0;
 		paddles[LEFT_PADDLE].position_changed = 0;
 	} else if(ball->y_pos > paddles[LEFT_PADDLE].window->window_y_pos + paddles[LEFT_PADDLE].height - 20) {
@@ -336,12 +336,12 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 		} else { /* Ball collided with right paddle, continue */
 			printf("Ball collision with left paddle!\n");
 			if(paddle_traveled > 0) { /* If paddle moved down */
-				ball->slope -= .4;
+				ball->slope -= .3;
 				if(ball->slope <= 0)
 					ball->slope *= -1;
 				printf("moved down collision\n");
 			} else if(paddle_traveled < 0) { /* If paddle moved up */
-				ball->slope += .4;
+				ball->slope += .3;
 				if(ball->slope > 0)
 					ball->slope *= -1;
 				printf("moved up collision\n");
@@ -352,11 +352,11 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 			/* Limit how much ball bounces off walls */
 			if(ball->slope > 1.6) {
 				printf("Readjusting\n");
-				ball->slope -= .4;
+				ball->slope -= .3;
 			}
 			if(ball->slope < -1.6) {
 				printf("Readjusting\n");
-				ball->slope += .4;
+				ball->slope += .3;
 			}
 			ball->velocity = ball->velocity * -1;
 			move_ball(ball);
@@ -374,12 +374,12 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 			printf("Ball collision with right paddle!\n");
 			random_reaction = rand() % 51;
 			if(paddle_traveled > 0) { /* If paddle moved down */
-				ball->slope += .4;
+				ball->slope += .42;
 				if(ball->slope > 0)
 					ball->slope *= -1;
 				printf("moved down collision\n");
 			} else if(paddle_traveled < 0) { /* If paddle moved up */
-				ball->slope -= .4;
+				ball->slope -= .42;
 				if(ball->slope <= 0)
 					ball->slope *= -1;
 				printf("moved up collision\n");
@@ -390,11 +390,11 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 			/* Limit how much ball bounces off walls */
 			if(ball->slope > 1.6) {
 				printf("Readjusting\n");
-				ball->slope -= .4;
+				ball->slope -= .42;
 			}
 			if(ball->slope < -1.6) {
 				printf("Readjusting\n");
-				ball->slope += .4;
+				ball->slope += .42;
 			}
 			ball->velocity = ball->velocity * -1;
 			move_ball(ball);

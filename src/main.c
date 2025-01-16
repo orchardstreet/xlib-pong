@@ -111,7 +111,7 @@ create_and_map_window(struct window_struct *windows, Window parent_window, int *
 			window_attributes_mask,
 			&window_attributes
 			);
-	printf("Created window %lu\n",window_number);
+	//printf("Created window %lu\n",window_number);
 
 	/* Map main window to display */
 	XMapWindow(display,window_number);
@@ -144,18 +144,18 @@ process_event_queue(int num_events, struct paddle_struct *paddles, Atom wmDelete
 		XNextEvent(display, &event_x11);
 		switch(event_x11.type) {
 			case ConfigureNotify: /* possibly useful if we resize window */
-				printf("ConfigureNotify event on window: %lu\n",event_x11.xexpose.window);
+				//printf("ConfigureNotify event on window: %lu\n",event_x11.xexpose.window);
 				break;
 			case Expose: /* possibly useful if we resize window */
-				printf("Expose event on window: %lu\n",event_x11.xexpose.window);
+				//printf("Expose event on window: %lu\n",event_x11.xexpose.window);
 				break;
 			case ClientMessage: /* startup adds one of these */
-				printf("ClientMessage event\n");
+				//printf("ClientMessage event\n");
 				if(event_x11.xclient.data.l[0] == wmDeleteMessage)
 					return EXIT_PROGRAM;
 				break;
 			case MapNotify: /* No idea if this is useful */
-				printf("MapNotify event on window: %lu\n",event_x11.xexpose.window);
+				//printf("MapNotify event on window: %lu\n",event_x11.xexpose.window);
 				break;
 			case KeyPress: /* Go to function from here */
 				//printf("KeyPress event\n");
@@ -186,7 +186,7 @@ process_event_queue(int num_events, struct paddle_struct *paddles, Atom wmDelete
 						}
 						break;
 					case XK_q:
-						printf("q button down event\n");
+						//printf("q button down event\n");
 						return EXIT_PROGRAM;
 				}
 				break;
@@ -217,7 +217,7 @@ process_event_queue(int num_events, struct paddle_struct *paddles, Atom wmDelete
 				}
 				break;
 			default:
-				printf("Unaccounted event with event number: %d\n",event_x11.type);
+				//printf("Unaccounted event with event number: %d\n",event_x11.type);
 				break;
 		}
 		/* usleep(100000);  REMOVE THIS AFTER DONE, FOR DEBUGGING ONLY */
@@ -240,11 +240,11 @@ update_moving_window_coordinates(struct window_struct *windows, struct ball_stru
 {
 	/* by default, assuming none of both down and up arrows are held down */
 	//printf("Moving windows...\n");
-	printf("random reaction: %f\n",random_reaction);
+	//printf("random reaction: %f\n",random_reaction);
 
 	/* TODO, for larger programs, Create array of objects with non-0 velocity and iterate them here and in move */
 	paddles[LEFT_PADDLE].old_y_pos = paddles[LEFT_PADDLE].window->window_y_pos;
-	printf("%f\n",ball->x_pos);
+	//printf("%f\n",ball->x_pos);
 	if(ball->velocity > 0 || ball->x_pos > 95 + random_reaction) {
 		paddles[LEFT_PADDLE].velocity = 0;
 		paddles[LEFT_PADDLE].position_changed = 0;
@@ -332,30 +332,30 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 		if (ball->y_pos + ball->width - 1 < paddles[LEFT_PADDLE].window->window_y_pos || ball->y_pos > paddles[LEFT_PADDLE].window->window_y_pos + paddles[LEFT_PADDLE].height - 1) { /* Ball passed right paddle, left player wins */
 			ball->passed = True;
 			paddles[LEFT_PADDLE].score += 1;
-			printf("Right player won :) \n");
+			//printf("Right player won :) \n");
 		} else { /* Ball collided with right paddle, continue */
-			printf("Ball collision with left paddle!\n");
+			//printf("Ball collision with left paddle!\n");
 			if(paddle_traveled > 0) { /* If paddle moved down */
 				ball->slope -= .3;
 				if(ball->slope <= 0)
 					ball->slope *= -1;
-				printf("moved down collision\n");
+				//printf("moved down collision\n");
 			} else if(paddle_traveled < 0) { /* If paddle moved up */
 				ball->slope += .3;
 				if(ball->slope > 0)
 					ball->slope *= -1;
-				printf("moved up collision\n");
+				//printf("moved up collision\n");
 			} else if (ball->slope) {
 				ball->slope *= -1;
 			}
 			
 			/* Limit how much ball bounces off walls */
 			if(ball->slope > 1.6) {
-				printf("Readjusting\n");
+				//printf("Readjusting\n");
 				ball->slope -= .3;
 			}
 			if(ball->slope < -1.6) {
-				printf("Readjusting\n");
+				//printf("Readjusting\n");
 				ball->slope += .3;
 			}
 			ball->velocity = ball->velocity * -1;
@@ -369,31 +369,31 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 		if (ball->y_pos + ball->width - 1 < paddles[RIGHT_PADDLE].window->window_y_pos || ball->y_pos > paddles[RIGHT_PADDLE].window->window_y_pos + paddles[RIGHT_PADDLE].height - 1) { /* Ball passed right paddle, left player wins */
 			ball->passed = True;
 			paddles[LEFT_PADDLE].score += 1;
-			printf("Left player won :) \n");
+			//printf("Left player won :) \n");
 		} else { /* Ball collided with right paddle, continue */
-			printf("Ball collision with right paddle!\n");
+			//printf("Ball collision with right paddle!\n");
 			random_reaction = rand() % 300;
 			if(paddle_traveled > 0) { /* If paddle moved down */
 				ball->slope += .42;
 				if(ball->slope > 0)
 					ball->slope *= -1;
-				printf("moved down collision\n");
+				//printf("moved down collision\n");
 			} else if(paddle_traveled < 0) { /* If paddle moved up */
 				ball->slope -= .42;
 				if(ball->slope <= 0)
 					ball->slope *= -1;
-				printf("moved up collision\n");
+				//printf("moved up collision\n");
 			} else if (ball->slope) {
 				ball->slope *= -1;
 			}
 			
 			/* Limit how much ball bounces off walls */
 			if(ball->slope > 1.6) {
-				printf("Readjusting\n");
+				//printf("Readjusting\n");
 				ball->slope -= .42;
 			}
 			if(ball->slope < -1.6) {
-				printf("Readjusting\n");
+				//printf("Readjusting\n");
 				ball->slope += .42;
 			}
 			ball->velocity = ball->velocity * -1;
@@ -411,7 +411,7 @@ window_collision_detection(struct paddle_struct *paddles, struct ball_struct *ba
 	}
 
 
-	printf("slope: %f\n",ball->slope);
+	//printf("slope: %f\n",ball->slope);
 
 
 	/* TODO add those with position changed to array for later move by z axis */
@@ -448,7 +448,7 @@ cleanup(struct window_struct *windows, int num_windows)
 		XDestroyWindow(display,windows[i].window_number);
 	}
 	XCloseDisplay(display);
-	printf("Exiting...\n");
+	//printf("Exiting...\n");
 	exit(EXIT_SUCCESS);
 
 }
@@ -519,12 +519,12 @@ main(void)
 	 * during a ClientMessage event while processing the
 	 * event queue */
 	Atom wmDeleteMessage = XInternAtom(display,"WM_DELETE_WINDOW",False);
-	printf("atom: %lu\n",wmDeleteMessage);
+	//printf("atom: %lu\n",wmDeleteMessage);
 	XSetWMProtocols(display, windows[0].window_number, &wmDeleteMessage, 1);
 	wmDeleteMessage = XInternAtom(display,"WM_DELETE_WINDOW",False);
-	printf("atom: %lu\n",wmDeleteMessage);
+	//printf("atom: %lu\n",wmDeleteMessage);
 	wmDeleteMessage = XInternAtom(display,"WM_DELETE_WINDOW",False);
-	printf("atom: %lu\n",wmDeleteMessage);
+	//printf("atom: %lu\n",wmDeleteMessage);
 
 	/* MAIN LOOP ---------------------------------------------------------------------------------------------------------------------------- */
 

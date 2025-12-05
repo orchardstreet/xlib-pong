@@ -1,2 +1,4 @@
 obj/*.o
 xlib-pong
+.kdev4
+xlib-pong.kdev4

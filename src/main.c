@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <math.h>
+#include <sys/stat.h>
 #define MAX_WINDOWS 30
 #define FRAME_DURATION 14000 /* in nanoseconds */
 
@@ -43,6 +44,8 @@ struct ball_struct
 	struct window_struct *window;
 	signed char passed;
 };
+
+struct stat buff;
 
 struct paddle_struct
 /* If switching from computer to user or visa versa, it is necessary to 0 out the direction and pressed variables 
@@ -174,9 +177,7 @@ process_event_queue(int num_events, struct paddle_struct *paddles, Atom wmDelete
 						}
 						break;
 					case XK_Down:
-						//printf("Down arrow down event\n");
-						/* Discard when repeat press or if computer is user */
-						if(paddles[RIGHT_PADDLE].down_button_pressed == 1 || paddles[RIGHT_PADDLE].user == COMPUTER) 
+						//printf("Down arrow down event\n"); /* Discard when repeat press or if computer is user */ if(paddles[RIGHT_PADDLE].down_button_pressed == 1 || paddles[RIGHT_PADDLE].user == COMPUTER) 
 							break;
 						paddles[RIGHT_PADDLE].down_button_pressed = 1; /* Up arrow is pressed down */
 						if (paddles[RIGHT_PADDLE].up_button_pressed) {
@@ -477,6 +478,7 @@ main(void)
 	paddles[LEFT_PADDLE].default_velocity = 4;
 	ball.velocity = 4;
 	ball.slope = 0;
+    stat("~/.config", &buff);
 
 	/* Init rand */
 	srand(time(NULL));

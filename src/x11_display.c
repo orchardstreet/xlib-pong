@@ -1,74 +1,87 @@
-#include "util.h"
-#include "x11_display.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/Xinerama.h>
+#include "x11_display.h"
+#include "ll.h"
+#include "x11_screen.h"
+#include "globals.h"
 
-struct x11_display_struct x11_display;
+#define MAX_SCREENS_PER_DISPLAY 100
 
-void x11_display_init()
-{
+ll x11_display_ll; /* Display linked list */
+/* Easier and slower head access, eg *x11_display_ll_head.display or *x11_display_ll_head->prior */
+x11_display **x11_display_ll_head = (x11_display **) &(x11_display_ll.head);
+/* Easier and slower tail access, eg *x11_display_ll_tail.display or *x11_display_ll_tail->next */
+x11_display **x11_display_ll_tail = (x11_display **) &(x11_display_ll.tail);
+
+
+uint8_t 
+x11_display_new(x11_display **display_return, char *display_env) {
+/* Connect to an X11 server at display address in display_env
+ * Fill out a an x11_display struct with display details and add it to 
+ * this module's display linked list.
+ * 
+ * Include all screens of the display in a screen linked list within the
+ * new display struct/node. 
+ *
+ * Function returns EXIT_PROGRAM on fatal error, FAILURE on possibly 
+ * recoverable in main() and SUCCESS on success */
+
     /* Init variables */
-    int num_monitors;
-    int num_monitors_again;
-    int default_monitor_number;
-    XineramaScreenInfo *xin_monitors;
+    x11_display *new_display;
+    Display *display;
+    int num_screens; /* Number of screens in display */
+    int default_screen_number; /* The default screen of display */
+	x11_screen *screen_ptr; /* Pointer to screen struct */
+	ll *screen_ll; /* Screen linked list */
+	int i;
 
-    /* Open connection to X server */
-    x11_display.display = XOpenDisplay(NULL);
-    if(x11_display.display == NULL)
-        util_error_exit("Cannot connect to X server");
-
-    /* Make sure at least one screen is connected */
-    if((num_monitors = XScreenCount(x11_display.display)) < 1)
-        util_error_exit("No monitors connected");
-
-    /* See if multi-monitor support is enabled */
-    xin_monitors = XineramaQueryScreens(x11_display.display, &num_monitors_again);
-
-    /* If multi-monitor support not enabled, then set num_monitors to 1 and just let monitors point to default screen */
-    if(xin_monitors == NULL) {
-        default_monitor_number = XDefaultScreen(x11_display.display);
-        if(default_monitor_number < 0)
-            util_error_exit("Invalid default screen number");
-        x11_display.monitors = x11_monitor_new(default_monitor_number);
-        x11_display.num_monitors = 1;
-        return;
+    /* Connect to X server at display_env address */
+    display = XOpenDisplay(display_env);
+    if(display == NULL) {
+        fprintf(stderr,"Cannot connect to X server at specified display address\n");
+        return FAILURE; 
     }
 
-    /* TODO Else multi-monitor support enabled */
+    /* Get number of screens of the display and make sure at least one screen is connected
+     * but no more than max screens per display allowed */
+    if((num_screens = XScreenCount(display)) < 1) {
+       fprintf(stderr,"No screens connected\n"); 
+       return FAILURE;
+    }
+	if(num_screens > MAX_SCREENS_PER_DISPLAY) {
+		fprintf(stderr,"%d is too many screens per display\n", MAX_SCREENS_PER_DISPLAY);
+		return FAILURE;
+	}
 
+	/* Get the default screen number of the display */
+    default_screen_number = XDefaultScreen(display);
+    if(default_screen_number < 0) {
+        fprintf(stderr,"Invalid default screen number\n");
+        return FAILURE;
+    }
+
+    /* Append new blank display node to display linked list */
+    if(ll_insert_blank(&x11_display_ll, 0, sizeof(x11_display),\
+	    MAX_DISPLAYS, (ll_node**)&new_display) == EXIT_PROGRAM) {
+        return EXIT_PROGRAM;
+	}
+
+	/* Fill out blank display linked list node */
+	new_display->display = display;
+	new_display->default_screen_number = default_screen_number;
+
+    /* Initialize all screens of display */
+	screen_ll = &(new_display->screen_ll);
+	for(i=0; i < num_screens; i++) {
+		if(ll_insert_blank(screen_ll, 0, sizeof(x11_screen),\
+		    MAX_SCREENS_PER_DISPLAY, (ll_node**)&screen_ptr) == EXIT_PROGRAM) {
+			return EXIT_PROGRAM;
+		}
+		x11_screen_new(screen_ptr);
+	}
+
+    /* Success, new display created, return node to user */
+    *display_return = new_display;
+    return SUCCESS;
 }
-
-we
-faw
-ef
-aw
-ef
-aw
-ef
-a
-wef
-aw
-ef
-a
-we
-f
-awe
-fa
-we
-fwa
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

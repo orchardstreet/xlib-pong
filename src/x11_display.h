@@ -1,18 +1,20 @@
 #ifndef X11_DISPLAY_H
 #define X11_DISPLAY_H
 #include <inttypes.h>
+#include <limits.h>
 #include <X11/Xlib.h>
-#include "x11_monitor.h"
+#include "x11_screen.h"
+#include "ll.h"
+#define MAX_DISPLAYS INT_MAX
 
-struct x11_display_struct {
+typedef struct x11_display_struct {
+	struct x11_display_struct *next;
+	struct x11_display_struct *prior;
     Display *display;
-    uint32_t num_monitors;
-    x11_monitor * monitors; /* initialize with malloc */
-    uint8_t has_multi_monitor_support;
-};
+	ll screen_ll; /* List of attached screens */	
+	int default_screen_number;
+} x11_display;
 
-extern struct x11_display_struct x11_display;
-
-void x11_display_init(void);
+uint8_t x11_display_new(x11_display **display_return, char *display_env);
 
 #endif

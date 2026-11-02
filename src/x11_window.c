@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
+#include "ll.h"
 
-x11_window x11_window_arr[MAX_WINDOWS];
-unsigned char x11_window_arr_index;
+ll x11_window_ll
 
 x11_window * x11_window_new(Display *display, int x_pos, int y_pos, Window parent_window, unsigned long event_mask, unsigned char win_background_color, int width, int height, int screen_number)
 {

@@ -434,6 +434,8 @@ main(void)
 		return (EXIT_FAILURE);
 	}
 
+	Screen *screens = game_context.main_display->display->screens;
+
 	printf("End debug success, exiting...\n");
 	return 0;
 

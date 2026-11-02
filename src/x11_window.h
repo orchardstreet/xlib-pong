@@ -1,6 +1,6 @@
 #ifndef x11_window_h
 #define x11_window_h
-#define MAX_WINDOWS 2
+#define MAX_WINDOWS 200
 #include <X11/Xlib.h>
 enum x11_window_background_colors_enum {X11_WHITE_WINDOW_BACKGROUND, X11_BLACK_WINDOW_BACKGROUND};
 
